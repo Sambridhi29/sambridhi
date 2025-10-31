@@ -3,52 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sambridhi</title>
+    <title>Sambridhi - Portfolio</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background: #f9f9f9;
-            color: #333;
+            background: #111;
+            color: #f1f1f1;
+            overflow-x: hidden;
         }
         header {
-            background-color: #FF5722;
+            background: linear-gradient(135deg, #FF5722, #ff8c42);
             color: white;
             text-align: center;
-            padding: 60px 20px;
+            padding: 80px 20px;
+            animation: fadeIn 2s ease-in;
         }
         header h1 {
             margin: 0;
-            font-size: 3em;
+            font-size: 3.5em;
+            letter-spacing: 2px;
         }
         header p {
-            font-size: 1.2em;
+            font-size: 1.3em;
+            margin-top: 10px;
         }
         section {
-            padding: 40px 20px;
-            max-width: 800px;
+            padding: 50px 20px;
+            max-width: 900px;
             margin: auto;
+            animation: fadeUp 1.5s ease-in;
         }
         h2 {
             color: #FF5722;
+            font-size: 2em;
+            border-bottom: 2px solid #FF5722;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
         }
         ul {
             list-style: none;
             padding: 0;
         }
         ul li {
-            margin: 10px 0;
+            margin: 15px 0;
+            font-size: 1.1em;
+            transition: transform 0.3s ease;
+        }
+        ul li:hover {
+            transform: translateX(10px);
         }
         a {
             color: #FF5722;
             text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            color: #ffa76d;
         }
         footer {
             text-align: center;
-            padding: 20px;
-            background: #222;
-            color: white;
+            padding: 25px;
+            background: #000;
+            color: #ccc;
+            margin-top: 40px;
+            font-size: 0.9em;
+        }
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        @keyframes fadeUp {
+            from {opacity: 0; transform: translateY(30px);}
+            to {opacity: 1; transform: translateY(0);}
         }
     </style>
 </head>
@@ -56,23 +84,40 @@
 
     <header>
         <h1>Sambridhi</h1>
-        <p>Welcome to my personal website!</p>
+        <p>Project Builder | Coder | Business Management Student</p>
     </header>
 
     <section>
         <h2>About Me</h2>
-        <p>Hello! I am Sambridhi, passionate about [insert hobbies/interests]. I love learning new skills and sharing my experiences with others.</p>
+        <p>Hello! I am <strong>Sambridhi</strong>, a passionate student currently pursuing my 
+        <strong>Integrated Business Management</strong> major at <strong>Donga University</strong>. 
+        I am in my <strong>second semester</strong> and enjoy blending technical creativity with business knowledge. 
+        I specialize in <em>project building and coding</em>, and I’m always eager to learn, innovate, and share my journey.</p>
+        <p><strong>Student ID:</strong> 2518337</p>
+        <p><strong>Email:</strong> <a href="mailto:neupanesambridhi7@gmail.com">neupanesambridhi7@gmail.com</a></p>
     </section>
 
     <section>
-        <h2>Portfolio</h2>
+        <h2>Projects</h2>
         <ul>
-            <li>Project 1 - <a href="#">Link</a></li>
-            <li>Project 2 - <a href="#">Link</a></li>
-            <li>Project 3 - <a href="#">Link</a></li>
+            <li>Old Game - <a href="https://sambridhi29.github.io/sambridhi/game.html" target="_blank">Play Old Game</a></li>
+            <li>New Game - <a href="https://sambridhi29.github.io/sambridhi/newgame.html" target="_blank">Play New Game</a></li>
+            <li>Game Improvement Prompt - <a href="https://docs.google.com/document/d/1VrY6_X5tSmBEj6Jsk3DD4V69xWbQpfV7HlgyvDPPbKQ/edit?usp=drivesdk" target="_blank">View Document</a></li>
+            <li>Programming Practice Exercise - <a href="https://colab.research.google.com/drive/1xWD_5qu1Ff3SgpAVT7gPs4F72oMAydy7" target="_blank">Open in Google Colab</a></li>
+            <li>Overall Learning Journey Part 1 - <a href="https://g.co/gemini/share/e8dbc242a6ec" target="_blank">View Part 1</a></li>
+            <li>Overall Learning Journey Part 2 - <a href="https://gemini.google.com/share/ae21c796b611" target="_blank">View Part 2</a></li>
         </ul>
     </section>
 
     <section>
         <h2>Contact</h2>
-        <p>Email: <a href="mailto:sambridhi@example.com">sambridhi@example.c
+        <p>If you’d like to collaborate or learn more, feel free to reach out!</p>
+        <p>Email: <a href="mailto:neupanesambridhi7@gmail.com">neupanesambridhi7@gmail.com</a></p>
+    </section>
+
+    <footer>
+        <p>© 2025 Sambridhi | Designed with passion and creativity</p>
+    </footer>
+
+</body>
+</html>
