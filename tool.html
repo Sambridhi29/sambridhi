@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CSV Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg:#0f0b16;
+  --panel:#181226;
+  --accent:#8b5cf6;
+  --accent-2:#22d3ee;
+  --text:#e5e1f0;
+  --muted:#9a90b8;
+  --border:#2a2340;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(135deg,var(--bg),#05040a);color:var(--text);}
+header {
+  padding: 24px;
+  border-bottom: 7px solid var(--border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+header h1 {
+  font-size: 2.6rem;
+  margin: 0;
+  color: var(--accent);
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+main{padding:24px;display:grid;grid-template-columns:1fr;gap:20px;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.35);}
+.panel h2{margin-top:0;font-size:1.05rem;color:var(--accent-2);}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:10px;}
+input[type="file"],select,button,input[type="text"]{background:#0d0a18;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+button{background:linear-gradient(135deg,var(--accent),#6d28d9);color:white;border:none;cursor:pointer;font-weight:600;}
+button:hover{filter:brightness(1.1);}
+table{width:100%;border-collapse:collapse;font-size:0.9rem;margin-bottom:10px;}
+th,td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:left;white-space:nowrap;}
+th{color:var(--accent);font-weight:600;}
+.table-wrap{overflow-x:auto;max-height:420px;}
+.status{color:var(--muted);font-size:0.85rem;margin-top:8px;}
+#pageInfo{margin:0 10px;}
+canvas{background:#0d0a18;border:1px solid var(--border);border-radius:10px;padding:10px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="title-wrap">
+    <h1>CSV Analyzer Tool</h1>
+    <p class="subtitle">Sambridhi Neupane</p>
+  </div>
+</header>
+<main>
+
+<!-- Load CSV Panel -->
+<div class="panel">
+<h2>Load CSV</h2>
+<div class="controls">
+<input type="file" id="csvFile" accept=".csv" />
+<select id="delimiter">
+<option value=",">Comma (,)</option>
+<option value=";">Semicolon (;)</option>
+<option value="\t">Tab</option>
+<option value="|">Pipe (|)</option>
+</select>
+<button id="loadBtn">Load</button>
+</div>
+<div class="status" id="loadStatus">No file loaded.</div>
+</div>
+
+<!-- Preview Panel -->
+<div class="panel">
+<h2>Preview</h2>
+<div class="table-wrap">
+<table id="previewTable"></table>
+</div>
+</div>
+
+<!-- Pagination Panel -->
+<div class="panel">
+<h2>Pagination</h2>
+<div class="controls">
+<button id="prevBtn" disabled>Previous</button>
+<span id="pageInfo">Page 1</span>
+<button id="nextBtn" disabled>Next</button>
+</div>
+</div>
+
+<!-- Descriptive Stats -->
+<div class="panel">
+<h2>Descriptive Statistics</h2>
+<div id="statsContainer">Load CSV to see stats.</div>
+</div>
+
+<!-- Anomaly Detection -->
+<div class="panel">
+<h2>Anomaly Detection (IQR)</h2>
+<div class="controls">
+<button id="detectAnomaliesBtn">Detect Anomalies</button>
+<button id="downloadAnomaliesBtn" disabled>Download Anomalies CSV</button>
+</div>
+<div class="table-wrap">
+<table id="anomalyTable"></table>
+</div>
+</div>
+
+<!-- Categorical Analysis -->
+<div class="panel">
+<h2>Categorical Analysis</h2>
+<div class="controls">
+<select id="categoricalSelect"><option value="">Select column</option></select>
+<button id="analyzeCategoricalBtn">Analyze</button>
+</div>
+<div id="categoricalContainer">Load CSV to see categorical analysis.</div>
+</div>
+
+<!-- Filters -->
+<div class="panel">
+<h2>Filters</h2>
+<div class="controls">
+<select id="filterColumn"><option value="">Select column</option></select>
+<select id="filterCondition"><option value="">Select condition</option></select>
+<input type="text" id="filterValue" placeholder="Enter value" />
+<button id="applyFilterBtn">Apply Filter</button>
+<button id="clearFilterBtn">Clear Filter</button>
+</div>
+<div class="status" id="filterStatus">No filter applied.</div>
+</div>
+
+<!-- Group & Aggregate -->
+<div class="panel">
+<h2>Group & Aggregate</h2>
+<div class="controls">
+<select id="groupColumn"><option value="">Select group column</option></select>
+<select id="aggregateColumn"><option value="">Select aggregate column</option></select>
+<select id="aggregateType">
+<option value="sum">Sum</option>
+<option value="average">Average</option>
+<option value="count">Count</option>
+<option value="min">Min</option>
+<option value="max">Max</option>
+</select>
+<button id="applyAggregateBtn">Apply</button>
+<button id="downloadAggregateBtn" disabled>Download Result</button>
+</div>
+<div id="aggregateContainer">Load CSV to perform aggregation.</div>
+</div>
+
+<!-- Date/Time Analysis -->
+<div class="panel">
+<h2>Date/Time Analysis</h2>
+<div class="controls">
+<select id="dateColumn"><option value="">Select date/time column</option></select>
+<select id="dateAggregation">
+<option value="year">Year</option>
+<option value="month">Month</option>
+<option value="week">Week</option>
+<option value="day">Day</option>
+</select>
+<button id="applyDateAnalysisBtn">Analyze</button>
+<button id="downloadDateResultBtn" disabled>Download Result</button>
+</div>
+<div id="dateAnalysisContainer">Load CSV to perform date/time analysis.</div>
+</div>
+
+<!-- Chart Panel -->
+<div class="panel">
+<h2>Charts</h2>
+<div class="controls">
+<select id="chartColumn"><option value="">Select column</option></select>
+<select id="chartType">
+<option value="bar">Bar</option>
+<option value="line">Line</option>
+<option value="pie">Pie</option>
+</select>
+<button id="renderChartBtn">Render Chart</button>
+<button id="downloadChartBtn" disabled>Download Chart</button>
+</div>
+<canvas id="chartCanvas" width="400" height="200"></canvas>
+</div>
+
+</main>
+
+<script>
+let csvData=[],filteredData=[],currentPage=1,anomalies=[];
+const rowsPerPage=50;
+let chartInstance=null;
+
+// DOM references
+const fileInput=document.getElementById("csvFile");
+const delimiterSelect=document.getElementById("delimiter");
+const loadBtn=document.getElementById("loadBtn");
+const table=document.getElementById("previewTable");
+const status=document.getElementById("loadStatus");
+const prevBtn=document.getElementById("prevBtn");
+const nextBtn=document.getElementById("nextBtn");
+const pageInfo=document.getElementById("pageInfo");
+const statsContainer=document.getElementById("statsContainer");
+
+const categoricalSelect=document.getElementById("categoricalSelect");
+const analyzeCategoricalBtn=document.getElementById("analyzeCategoricalBtn");
+const categoricalContainer=document.getElementById("categoricalContainer");
+
+const dateColumn=document.getElementById("dateColumn");
+const dateAggregation=document.getElementById("dateAggregation");
+const applyDateAnalysisBtn=document.getElementById("applyDateAnalysisBtn");
+const dateAnalysisContainer=document.getElementById("dateAnalysisContainer");
+
+const filterColumn=document.getElementById("filterColumn");
+const filterCondition=document.getElementById("filterCondition");
+const filterValue=document.getElementById("filterValue");
+const applyFilterBtn=document.getElementById("applyFilterBtn");
+const clearFilterBtn=document.getElementById("clearFilterBtn");
+const filterStatus=document.getElementById("filterStatus");
+
+const groupColumn=document.getElementById("groupColumn");
+const aggregateColumn=document.getElementById("aggregateColumn");
+const aggregateType=document.getElementById("aggregateType");
+const applyAggregateBtn=document.getElementById("applyAggregateBtn");
+const aggregateContainer=document.getElementById("aggregateContainer");
+const downloadAggregateBtn=document.getElementById("downloadAggregateBtn");
+
+const detectAnomaliesBtn=document.getElementById("detectAnomaliesBtn");
+const downloadAnomaliesBtn=document.getElementById("downloadAnomaliesBtn");
+const anomalyTable=document.getElementById("anomalyTable");
+
+const chartColumn=document.getElementById("chartColumn");
+const chartType=document.getElementById("chartType");
+const renderChartBtn=document.getElementById("renderChartBtn");
+const downloadChartBtn=document.getElementById("downloadChartBtn");
+const chartCanvas=document.getElementById("chartCanvas");
+
+// --- Load CSV ---
+loadBtn.onclick=()=>{
+    const file=fileInput.files[0];
+    if(!file){status.textContent="Please select a CSV file.";return;}
+    Papa.parse(file,{header:true,skipEmptyLines:true,delimiter:delimiterSelect.value,
+        complete: results=>{
+            csvData=results.data;
+            filteredData=[];
+            anomalies=[];
+            currentPage=1;
+            renderTablePage();
+            renderStats();
+            updateCategoricalOptions();
+            updateFilterOptions();
+            updateGroupAggregateOptions();
+            updateDateOptions();
+            updateChartOptions();
+            status.textContent=`Loaded ${csvData.length} rows.`;
+        },
+        error:()=>{status.textContent="Failed to parse CSV.";}
+    });
+};
+
+// --- Pagination ---
+function renderTablePage(page=currentPage){
+    table.innerHTML="";
+    const data=filteredData.length?filteredData:csvData;
+    if(!data.length) return;
+    const headers=Object.keys(data[0]);
+    const thead=document.createElement("tr");
+    headers.forEach(h=>{const th=document.createElement("th"); th.textContent=h; thead.appendChild(th);});
+    table.appendChild(thead);
+    const start=(page-1)*rowsPerPage,end=start+rowsPerPage;
+    const pageData=data.slice(start,end);
+    pageData.forEach(row=>{const tr=document.createElement("tr");headers.forEach(h=>{const td=document.createElement("td");td.textContent=row[h];tr.appendChild(td);});table.appendChild(tr);});
+    prevBtn.disabled=page===1;
+    nextBtn.disabled=end>=data.length;
+    pageInfo.textContent=`Page ${page} of ${Math.ceil(data.length/rowsPerPage)}`;
+}
+prevBtn.onclick=()=>{if(currentPage>1){currentPage--;renderTablePage();}};
+nextBtn.onclick=()=>{if(currentPage*rowsPerPage<(filteredData.length?filteredData.length:csvData.length)){currentPage++;renderTablePage();}};
+
+// --- Descriptive Stats ---
+function calculateStats(data){
+    if(!data.length) return {};
+    const headers=Object.keys(data[0]);
+    const numericCols=headers.filter(h=>!isNaN(parseFloat(data[0][h])));
+    const stats={};
+    numericCols.forEach(col=>{
+        const values=data.map(r=>parseFloat(r[col])).filter(v=>!isNaN(v));
+        const count=values.length;
+        const mean=values.reduce((a,b)=>a+b,0)/count;
+        const sorted=[...values].sort((a,b)=>a-b);
+        const median=count%2===0?(sorted[count/2-1]+sorted[count/2])/2:sorted[Math.floor(count/2)];
+        const min=sorted[0]; const max=sorted[sorted.length-1];
+        const variance=values.reduce((a,v)=>a+Math.pow(v-mean,2),0)/count;
+        const std=Math.sqrt(variance);
+        stats[col]={count,mean,median,min,max,std};
+    });
+    return stats;
+}
+function renderStats(){
+    const stats=calculateStats(csvData);
+    if(!Object.keys(stats).length){statsContainer.textContent="No numeric columns to analyze.";return;}
+    let html="<table style='width:100%; border-collapse: collapse;'><tr style='color:"+getComputedStyle(document.documentElement).getPropertyValue('--accent')+"'><th>Column</th><th>Count</th><th>Mean</th><th>Median</th><th>Min</th><th>Max</th><th>Std</th></tr>";
+    for(const col in stats){const s=stats[col];html+=`<tr><td>${col}</td><td>${s.count}</td><td>${s.mean.toFixed(2)}</td><td>${s.median.toFixed(2)}</td><td>${s.min.toFixed(2)}</td><td>${s.max.toFixed(2)}</td><td>${s.std.toFixed(2)}</td></tr>`;}
+    html+="</table>";
+    statsContainer.innerHTML=html;
+}
+
+// --- Update Column Options ---
+function updateCategoricalOptions(){
+    categoricalSelect.innerHTML='<option value="">Select column</option>';
+    if(!csvData.length) return;
+    Object.keys(csvData[0]).forEach(col=>{
+        const option=document.createElement("option");
+        option.value=col; option.textContent=col; categoricalSelect.appendChild(option);
+    });
+}
+function updateFilterOptions(){
+    filterColumn.innerHTML='<option value="">Select column</option>';
+    filterCondition.innerHTML='<option value="">Select condition</option>';
+    if(!csvData.length) return;
+    Object.keys(csvData[0]).forEach(col=>{
+        const option=document.createElement("option"); option.value=col; option.textContent=col; filterColumn.appendChild(option);
+    });
+    const conditions=["equals","not equals","contains","greater than","less than"];
+    conditions.forEach(cond=>{
+        const option=document.createElement("option"); option.value=cond; option.textContent=cond; filterCondition.appendChild(option);
+    });
+}
+function updateGroupAggregateOptions(){
+    groupColumn.innerHTML='<option value="">Select group column</option>';
+    aggregateColumn.innerHTML='<option value="">Select aggregate column</option>';
+    if(!csvData.length) return;
+    Object.keys(csvData[0]).forEach(col=>{
+        const opt1=document.createElement("option"); opt1.value=col; opt1.textContent=col; groupColumn.appendChild(opt1);
+        const opt2=document.createElement("option"); opt2.value=col; opt2.textContent=col; aggregateColumn.appendChild(opt2);
+    });
+}
+function updateDateOptions(){
+    dateColumn.innerHTML='<option value="">Select date/time column</option>';
+    if(!csvData.length) return;
+    Object.keys(csvData[0]).forEach(col=>{
+        for(let row of csvData){if(row[col] && !isNaN(new Date(row[col]).getTime())){const option=document.createElement("option");option.value=col;option.textContent=col;dateColumn.appendChild(option);break;}}
+    });
+}
+function updateChartOptions(){
+    chartColumn.innerHTML='<option value="">Select column</option>';
+    if(!csvData.length) return;
+    Object.keys(csvData[0]).forEach(col=>{
+        const option=document.createElement("option"); option.value=col; option.textContent=col; chartColumn.appendChild(option);
+    });
+}
+
+// --- Filters ---
+applyFilterBtn.onclick = () => {
+    const col = filterColumn.value;
+    const cond = filterCondition.value;
+    const val = filterValue.value;
+    if(!col || !cond || val === "") { alert("Select column, condition, and value."); return; }
+
+    filteredData = csvData.filter(row => {
+        const cell = row[col];
+        switch(cond){
+            case "equals": return cell == val;
+            case "not equals": return cell != val;
+            case "contains": return cell.includes(val);
+            case "greater than": return parseFloat(cell) > parseFloat(val);
+            case "less than": return parseFloat(cell) < parseFloat(val);
+            default: return true;
+        }
+    });
+
+    currentPage = 1;
+    renderTablePage();
+    filterStatus.textContent = `Filter applied: ${col} ${cond} ${val}, ${filteredData.length} rows found.`;
+};
+
+clearFilterBtn.onclick = () => {
+    filteredData = [];
+    currentPage = 1;
+    renderTablePage();
+    filterStatus.textContent = "Filter cleared.";
+};
+
+// --- Categorical Analysis ---
+analyzeCategoricalBtn.onclick = () => {
+    const col = categoricalSelect.value;
+    if (!col) { alert("Select a column first."); return; }
+    const dataToUse = filteredData.length ? filteredData : csvData;
+    const counts = {};
+    dataToUse.forEach(row => {
+        const val = row[col];
+        if (val !== undefined && val !== "") counts[val] = (counts[val] || 0) + 1;
+    });
+    let html = "<table style='width:100%; border-collapse: collapse;'><tr><th>Value</th><th>Count</th></tr>";
+    for (const val in counts) html += `<tr><td>${val}</td><td>${counts[val]}</td></tr>`;
+    html += "</table>";
+    categoricalContainer.innerHTML = html;
+};
+
+// --- Date/Time Analysis ---
+applyDateAnalysisBtn.onclick = () => {
+    const col = dateColumn.value;
+    const agg = dateAggregation.value;
+    if (!col) { alert("Select a date/time column."); return; }
+    const dataToUse = filteredData.length ? filteredData : csvData;
+    const counts = {};
+    dataToUse.forEach(row => {
+        const val = row[col]; if(!val) return;
+        const date = new Date(val); if(isNaN(date)) return;
+        let key;
+        switch(agg){
+            case "year": key = date.getFullYear(); break;
+            case "month": key = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}`; break;
+            case "week":
+                const oneJan = new Date(date.getFullYear(),0,1);
+                const week = Math.ceil((((date-oneJan)/86400000)+oneJan.getDay()+1)/7);
+                key = `${date.getFullYear()}-W${week}`; break;
+            case "day": key = `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`; break;
+        }
+        counts[key] = (counts[key] || 0) + 1;
+    });
+    let html = "<table style='width:100%; border-collapse: collapse;'><tr><th>Period</th><th>Count</th></tr>";
+    for (const key in counts) html += `<tr><td>${key}</td><td>${counts[key]}</td></tr>`;
+    html += "</table>";
+    dateAnalysisContainer.innerHTML = html;
+};
+
+// --- Anomaly Detection ---
+detectAnomaliesBtn.onclick = () => {
+    anomalies = [];
+    const dataToUse = filteredData.length ? filteredData : csvData;
+    if(!dataToUse.length) return;
+    const headers = Object.keys(dataToUse[0]);
+    const numericCols = headers.filter(h => !isNaN(parseFloat(dataToUse[0][h])));
+    numericCols.forEach(col => {
+        const values = dataToUse.map(r => parseFloat(r[col])).filter(v => !isNaN(v)).sort((a,b)=>a-b);
+        const q1 = values[Math.floor(values.length*0.25)];
+        const q3 = values[Math.floor(values.length*0.75)];
+        const iqr = q3-q1;
+        dataToUse.forEach(r=>{
+            const v=parseFloat(r[col]);
+            if(!isNaN(v) && (v<q1-1.5*iqr || v>q3+1.5*iqr)) anomalies.push(r);
+        });
+    });
+    renderAnomalyTable();
+};
+
+function renderAnomalyTable(){
+    anomalyTable.innerHTML="";
+    if(!anomalies.length){anomalyTable.innerHTML="<tr><td>No anomalies found.</td></tr>"; downloadAnomaliesBtn.disabled=true; return;}
+    const headers = Object.keys(anomalies[0]);
+    const thead=document.createElement("tr");
+    headers.forEach(h=>{const th=document.createElement("th"); th.textContent=h; thead.appendChild(th);});
+    anomalyTable.appendChild(thead);
+    anomalies.forEach(r=>{
+        const tr=document.createElement("tr");
+        headers.forEach(h=>{const td=document.createElement("td"); td.textContent=r[h]; tr.appendChild(td);});
+        anomalyTable.appendChild(tr);
+    });
+    downloadAnomaliesBtn.disabled=false;
+}
+
+downloadAnomaliesBtn.onclick=()=>{
+    if(!anomalies.length){alert("No anomalies to download."); return;}
+    const csv=Papa.unparse(anomalies);
+    const link=document.createElement("a");
+    link.href='data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    link.download='anomalies.csv';
+    link.click();
+};
+
+// --- Group & Aggregate ---
+applyAggregateBtn.onclick = () => {
+    const groupCol = groupColumn.value;
+    const aggCol = aggregateColumn.value;
+    const aggType = aggregateType.value;
+    if(!groupCol || !aggCol || !aggType) { alert("Select all options."); return; }
+    const dataToUse = filteredData.length ? filteredData : csvData;
+    const result = {};
+    dataToUse.forEach(r=>{
+        const g = r[groupCol]; 
+        const val = parseFloat(r[aggCol]);
+        if(!result[g]) result[g]=[];
+        if(!isNaN(val)) result[g].push(val);
+    });
+    let html="<table style='width:100%; border-collapse: collapse;'><tr><th>"+groupCol+"</th><th>"+aggType+" of "+aggCol+"</th></tr>";
+    const downloadData=[];
+    for(const g in result){
+        let aggVal;
+        const arr=result[g];
+        switch(aggType){
+            case "sum": aggVal=arr.reduce((a,b)=>a+b,0); break;
+            case "average": aggVal=arr.reduce((a,b)=>a+b,0)/arr.length; break;
+            case "count": aggVal=arr.length; break;
+            case "min": aggVal=Math.min(...arr); break;
+            case "max": aggVal=Math.max(...arr); break;
+        }
+        html+=`<tr><td>${g}</td><td>${aggVal}</td></tr>`;
+        downloadData.push({[groupCol]:g,[aggType]:aggVal});
+    }
+    html+="</table>";
+    aggregateContainer.innerHTML=html;
+    downloadAggregateBtn.disabled=false;
+    downloadAggregateBtn.onclick = ()=>{
+        const csv = Papa.unparse(downloadData);
+        const link=document.createElement("a");
+        link.href='data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        link.download='aggregate.csv';
+        link.click();
+    }
+};
+
+// --- Chart ---
+renderChartBtn.onclick = () => {
+    const col = chartColumn.value;
+    const type = chartType.value;
+    if (!col) { alert("Select column."); return; }
+    const data = filteredData.length ? filteredData : csvData;
+    if (!data.length) return;
+    const firstVal = data[0][col];
+    let labels=[], dataset=[];
+    if(!isNaN(new Date(firstVal).getTime())){
+        labels = data.map((r,i)=>i+1);
+        dataset = data.map(r=>r[col]);
+    } else {
+        const counts={};
+        data.forEach(r=>{const v=r[col];counts[v]=(counts[v]||0)+1;});
+        labels = Object.keys(counts);
+        dataset = Object.values(counts);
+    }
+    if(chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(chartCanvas,{
+        type:type,
+        data:{labels:labels,datasets:[{label:col,data:dataset,backgroundColor:'rgba(139,92,246,0.6)',borderColor:'#8b5cf6',borderWidth:1}]},
+        options:{responsive:true,plugins:{legend:{display:true}}}
+    });
+    downloadChartBtn.disabled=false;
+};
+downloadChartBtn.onclick=()=>{
+    if(!chartInstance){alert("No chart to download.");return;}
+    const link=document.createElement("a");
+    link.href=chartCanvas.toDataURL("image/png");
+    link.download="chart.png";
+    link.click();
+};
+</script>
+</body>
+</html>
